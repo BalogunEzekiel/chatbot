@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
 
-# Inject custom HTML, CSS, and JS for floating, draggable, resizable, and minimizable window
+# Inject custom HTML, CSS, and JS
 components.html("""
 <style>
 #chat-widget {
@@ -39,9 +39,9 @@ components.html("""
   font-family: sans-serif;
   font-size: 14px;
 }
-#chat-footer {
-  padding: 8px;
-  border-top: 1px solid #ccc;
+#chat-messages {
+  overflow-y: auto;
+  height: 100%;
 }
 .minimized {
   height: 40px !important;
@@ -83,19 +83,27 @@ window.onload = () => {
       isDragging = false;
     };
   };
+
+  // Auto-scroll on new messages
+  const chatMessages = document.getElementById("chat-messages");
+  const observer = new MutationObserver(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+  observer.observe(chatMessages, { childList: true, subtree: true });
 };
 </script>
+
 <div id="chat-widget">
   <div id="chat-header">🐄 Livestock Health Chat</div>
-  <div id="chat-body"><!-- Scrollable content loaded by Streamlit --></div>
+  <div id="chat-body"><div id="chat-messages"></div></div>
 </div>
 """, height=0)
 
-# Initialize messages session
+# Session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Response logic
+# Bot logic
 def get_livestock_response(user_input):
     user_input_lower = user_input.lower()
     if "fever" in user_input_lower:
@@ -111,11 +119,22 @@ def get_livestock_response(user_input):
     else:
         return "🤔 Can you provide more information about your livestock’s symptoms or behavior?"
 
-# Container for actual chat inside widget
+# Chat UI styles and display logic
 with st.container():
     st.markdown("""
     <style>
-    .chat-box { position: fixed; bottom: 90px; right: 45px; width: 320px; max-height: 370px; overflow-y: auto; background: #f8f8f8; padding: 10px; border-radius: 10px; font-size: 14px; }
+    .chat-box {
+      position: fixed;
+      bottom: 90px;
+      right: 45px;
+      width: 320px;
+      max-height: 370px;
+      overflow-y: auto;
+      background: #f8f8f8;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
     .user { font-weight: bold; color: #0072C6; margin-bottom: 4px; }
     .bot { font-weight: normal; color: #111; margin-bottom: 10px; }
     </style>
@@ -124,23 +143,22 @@ with st.container():
     chat_container = st.empty()
 
     def display_messages():
-        chat_html = '<div class="chat-box">'
+        chat_html = '<div class="chat-box"><div id="chat-messages">'
         for msg in st.session_state.messages:
             role_class = "user" if msg["role"] == "user" else "bot"
             chat_html += f'<div class="{role_class}">{msg["content"]}</div>'
-        chat_html += "</div>"
+        chat_html += "</div></div>"
         chat_container.markdown(chat_html, unsafe_allow_html=True)
 
     display_messages()
 
-    # Chat input
+    # User input
     prompt = st.chat_input("Ask about livestock health...")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         display_messages()
 
-        # Simulate assistant typing
         thinking_placeholder = st.empty()
         thinking_placeholder.markdown("💭 Thinking...")
         time.sleep(1.5)
