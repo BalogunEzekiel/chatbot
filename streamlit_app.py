@@ -1,58 +1,55 @@
 import streamlit as st
-from openai import OpenAI
+# from openai import OpenAI  # Commented out OpenAI integration
 
 # Title and description
-st.set_page_config(page_title="Chatbot", page_icon="💬")
-st.title("💬 Chatbot with GPT-3.5")
+st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄")
+st.title("🐄 Livestock Health Chatbot")
 st.write(
     """
-    Welcome to the Streamlit Chatbot powered by OpenAI's GPT-3.5-turbo.  
-    - Enter your OpenAI API key to begin.  
-    - Your conversation will appear below and persist during the session.
+    Welcome to the Livestock Health Chatbot!  
+    - Ask questions related to livestock health and care.  
+    - Responses are generated using predefined logic based on your input.
     """
 )
 
-# Input for OpenAI API key
-openai_api_key = st.text_input("🔐 Enter your OpenAI API Key", type="password")
+# Optional API Key Input (Disabled)
+# openai_api_key = st.text_input("🔐 Enter your OpenAI API Key", type="password")
 
-if not openai_api_key:
-    st.info("Please add your OpenAI API key above to start chatting.", icon="🗝️")
-else:
-    # Create OpenAI client
-    client = OpenAI(api_key=openai_api_key)
+# Initialize session state for chat messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    # Initialize session state for chat messages
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# Display existing chat messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    # Display existing chat messages
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# Define response logic
+def get_livestock_response(user_input):
+    user_input_lower = user_input.lower()
+    if "fever" in user_input_lower:
+        return "A fever in livestock can indicate an infection. You should isolate the animal and contact a veterinarian."
+    elif "diarrhea" in user_input_lower:
+        return "Diarrhea can be caused by parasites or diet issues. Ensure the animal stays hydrated and consult a vet."
+    elif "not eating" in user_input_lower or "loss of appetite" in user_input_lower:
+        return "Loss of appetite may signal a digestive problem or illness. Observe for other symptoms and seek expert help."
+    elif "vaccination" in user_input_lower:
+        return "Vaccinations are vital to prevent diseases. Consult a vet for the proper vaccination schedule for your livestock."
+    elif "bloat" in user_input_lower:
+        return "Bloat is a serious condition. Avoid feeding high-risk foods and get veterinary attention immediately."
+    else:
+        return "Please provide more details about your livestock's condition or behavior so I can assist better."
 
-    # User input
-    if prompt := st.chat_input("Say something..."):
-        # Show user's message
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+# Chat input
+if prompt := st.chat_input("Ask about livestock health..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        # Display assistant response with streaming
-        with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            full_response = ""
+    # Generate response (OpenAI replaced with logic)
+    response = get_livestock_response(prompt)
 
-            stream = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=st.session_state.messages,
-                stream=True
-            )
+    with st.chat_message("assistant"):
+        st.markdown(response)
 
-            for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_response += content
-                    response_placeholder.markdown(full_response)
-
-        # Save assistant response
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.session_state.messages.append({"role": "assistant", "content": response})
