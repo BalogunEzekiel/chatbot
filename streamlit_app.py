@@ -1,10 +1,10 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import time
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
 
-# CSS + widget HTML + JS for draggable, resizable chat widget with sounds
+# Inject CSS/HTML/JS for the widget (same as your code)
 components.html("""
 <style>
 #chat-widget {
@@ -38,7 +38,6 @@ components.html("""
   overflow-y: auto;
   font-family: sans-serif;
   font-size: 14px;
-  white-space: pre-wrap;
 }
 #chat-footer {
   padding: 8px;
@@ -47,17 +46,19 @@ components.html("""
 .minimized {
   height: 40px !important;
 }
-.user-message {
+.user {
+  background-color: #dcf8c6;
+  margin: 5px;
+  padding: 8px;
+  border-radius: 8px;
   text-align: right;
-  margin: 5px;
-  color: #004d40;
-  font-weight: 600;
 }
-.bot-message {
-  text-align: left;
+.bot {
+  background-color: #f1f0f0;
   margin: 5px;
-  color: #00695c;
-  font-weight: 600;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: left;
 }
 </style>
 
@@ -104,32 +105,19 @@ function playSendSound() {
 function playReceiveSound() {
   document.getElementById('receiveSound').play();
 }
-
-function typeText(elementId, text, speed=40) {
-  let i = 0;
-  const el = document.getElementById(elementId);
-  el.textContent = '';
-  function type() {
-    if (i < text.length) {
-      el.textContent += text.charAt(i);
-      i++;
-      setTimeout(type, speed);
-    } else {
-      playReceiveSound();
-    }
-  }
-  type();
-}
 </script>
 
 <div id="chat-widget">
   <div id="chat-header">🐄 Livestock Health Chat</div>
-  <div id="chat-body"></div>
+  <div id="chat-body"><!-- Filled by Streamlit --></div>
 </div>
 """, height=0)
 
+# State management
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Chatbot response logic
+# Response generator (same as your code)
 def get_livestock_response(user_input):
     user_input_lower = user_input.lower()
     keywords = {
@@ -169,77 +157,47 @@ def get_livestock_response(user_input):
             return val
     return "Can you provide more information about your livestock’s symptoms or behavior?"
 
-# Initialize session state for messages
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Container for chat display
+chat_container = st.container()
 
-# Input from user
-user_input = st.text_input("Ask about livestock health...", key="input_box")
+def display_chat():
+    chat_html = ""
+    for m in st.session_state.messages:
+        style = "user" if m["role"] == "user" else "bot"
+        chat_html += f'<div class="{style}">{m["content"]}</div>'
+    chat_container.markdown(chat_html, unsafe_allow_html=True)
+
+display_chat()
+
+user_input = st.chat_input("Ask about livestock health...")
 
 if user_input:
-    # Add user message
     st.session_state.messages.append({"role": "user", "content": user_input})
-    # Play send sound
     components.html("<script>playSendSound();</script>", height=0)
+    display_chat()
 
-    # Get bot response
-    with st.spinner("Thinking..."):
-        time.sleep(1.2)
-        bot_response = get_livestock_response(user_input)
+    with st.spinner("Typing..."):
+        reply = get_livestock_response(user_input)
 
-    # Add bot response (do not display immediately; will be typed)
-    st.session_state.messages.append({"role": "assistant", "content": bot_response})
+        # Simulate typing effect
+        bot_message_placeholder = chat_container.empty()
 
-# Prepare the chat HTML with user messages and placeholders for bot messages
-chat_html = ""
-typing_id_counter = 0
-last_bot_id = None
+        # Append user message and then gradually build bot message
+        st.session_state.messages.append({"role": "assistant", "content": ""})
+        current_bot_msg = ""
 
-for i, msg in enumerate(st.session_state.messages):
-    if msg["role"] == "user":
-        chat_html += f'<div class="user-message"><b>You:</b> {msg["content"]}</div>'
-    else:
-        # For the last bot message, we'll do typing animation, for previous, show full text
-        if i == len(st.session_state.messages) - 1:
-            typing_id = f"typing_{typing_id_counter}"
-            last_bot_id = typing_id
-            chat_html += f'<div class="bot-message"><b>Bot:</b> <span id="{typing_id}"></span></div>'
-            typing_id_counter += 1
-        else:
-            chat_html += f'<div class="bot-message"><b>Bot:</b> {msg["content"]}</div>'
+        for char in reply:
+            current_bot_msg += char
+            # Update last bot message content
+            st.session_state.messages[-1]["content"] = current_bot_msg
 
-# Render chat inside chat-body
-components.html(f"""
-<div id="chat-body" style="height:100%; overflow-y:auto; font-family:sans-serif; font-size:14px;">
-  {chat_html}
-</div>
+            # Re-render chat messages
+            chat_html = ""
+            for m in st.session_state.messages:
+                style = "user" if m["role"] == "user" else "bot"
+                chat_html += f'<div class="{style}">{m["content"]}</div>'
+            bot_message_placeholder.markdown(chat_html, unsafe_allow_html=True)
 
-<script>
-  // Scroll chat to bottom
-  const chatBody = parent.document.getElementById("chat-body") || document.getElementById("chat-body");
-  if(chatBody){ chatBody.scrollTop = chatBody.scrollHeight; }
+            time.sleep(0.03)  # Typing speed (adjust as needed)
 
-  // Type text for last bot message
-  const lastBotId = "{last_bot_id}";
-  if(lastBotId) {{
-    const text = `{st.session_state.messages[-1]["content"].replace("`", "\\`")}`;
-    function typeText(id, txt, speed=40) {{
-      let i = 0;
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.textContent = '';
-      function type() {{
-        if(i < txt.length) {{
-          el.textContent += txt.charAt(i);
-          i++;
-          setTimeout(type, speed);
-        }} else {{
-          playReceiveSound();
-        }}
-      }}
-      type();
-    }}
-    typeText(lastBotId, text);
-  }}
-</script>
-""", height=520)
+    components.html("<script>playReceiveSound();</script>", height=0)
