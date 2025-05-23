@@ -1,123 +1,148 @@
 import streamlit as st
-import time
 import streamlit.components.v1 as components
+import time
 
-st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
+def show_chatbot():
+    components.html("""
+    <style>
+    #chat-widget {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 350px;
+      height: 500px;
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      overflow: hidden;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      resize: both;
+    }
+    #chat-header {
+      background-color: #00a676;
+      color: white;
+      padding: 8px;
+      cursor: move;
+      font-weight: bold;
+      text-align: center;
+      user-select: none;
+    }
+    #chat-body {
+      flex-grow: 1;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: sans-serif;
+      font-size: 14px;
+    }
+    #chat-footer {
+      padding: 8px;
+      border-top: 1px solid #ccc;
+    }
+    .minimized {
+      height: 40px !important;
+    }
+    </style>
+    <script>
+    let widget = null;
+    let header = null;
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false;
 
-# Inject floating chatbox style and interactivity
-components.html("""
-<style>
-#floating-chatbox {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 350px;
-  max-height: 500px;
-  background: #ffffff;
-  border: 2px solid #ccc;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-  overflow: hidden;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  resize: both;
-}
-#chat-header {
-  background-color: #00a676;
-  color: white;
-  padding: 10px;
-  cursor: move;
-  font-weight: bold;
-  text-align: center;
-}
-#chat-body {
-  padding: 10px;
-  overflow-y: auto;
-  flex-grow: 1;
-}
-#chat-footer {
-  padding: 10px;
-  border-top: 1px solid #ccc;
-}
-</style>
-<script>
-let box = null;
-window.onload = () => {
-  box = document.getElementById("floating-chatbox");
-  let header = document.getElementById("chat-header");
-  let isDragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
+    window.onload = () => {
+      widget = document.getElementById("chat-widget");
+      header = document.getElementById("chat-header");
 
-  header.onmousedown = function(e) {
-    isDragging = true;
-    offsetX = e.clientX - box.getBoundingClientRect().left;
-    offsetY = e.clientY - box.getBoundingClientRect().top;
-    document.onmousemove = function(e) {
-      if (isDragging) {
-        box.style.left = (e.clientX - offsetX) + "px";
-        box.style.top = (e.clientY - offsetY) + "px";
-        box.style.right = "auto";
-        box.style.bottom = "auto";
-      }
+      header.ondblclick = () => {
+        if (widget.classList.contains("minimized")) {
+          widget.classList.remove("minimized");
+        } else {
+          widget.classList.add("minimized");
+        }
+      };
+
+      header.onmousedown = function(e) {
+        isDragging = true;
+        offsetX = e.clientX - widget.getBoundingClientRect().left;
+        offsetY = e.clientY - widget.getBoundingClientRect().top;
+
+        document.onmousemove = function(e) {
+          if (isDragging) {
+            widget.style.left = (e.clientX - offsetX) + "px";
+            widget.style.top = (e.clientY - offsetY) + "px";
+            widget.style.right = "auto";
+            widget.style.bottom = "auto";
+          }
+        };
+
+        document.onmouseup = function() {
+          isDragging = false;
+        };
+      };
     };
-    document.onmouseup = function() {
-      isDragging = false;
-    };
-  };
-};
-</script>
-""", height=0)
+    </script>
+    <div id="chat-widget">
+      <div id="chat-header">🐄 Livestock Health Chat</div>
+      <div id="chat-body"><!-- Chat logic rendered via Streamlit below --></div>
+    </div>
+    """, height=0)
 
-# Simulated chat logic
-def get_livestock_response(user_input):
-    user_input_lower = user_input.lower()
-    if "fever" in user_input_lower:
-        return "🤒 A fever in livestock can indicate an infection. You should isolate the animal and contact a veterinarian."
-    elif "diarrhea" in user_input_lower:
-        return "💧 Diarrhea can be caused by parasites or diet issues. Ensure the animal stays hydrated and consult a vet."
-    elif "not eating" in user_input_lower or "loss of appetite" in user_input_lower:
-        return "😟 Loss of appetite may signal a digestive problem or illness. Observe for other symptoms and use the Diagnosis tab to predict the disease."
-    elif "vaccination" in user_input_lower:
-        return "💉 Vaccinations are vital to prevent diseases. Consult a vet for the proper vaccination schedule for your livestock."
-    elif "bloat" in user_input_lower:
-        return "⚠️ Bloat is a serious condition. Avoid feeding high-risk foods and diagnose the disease based on symptoms observed."
-    else:
-        return "🤔 Please provide more details about your livestock's condition or behavior so I can assist better."
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-# Session for messages
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    def get_livestock_response(user_input):
+        user_input_lower = user_input.lower()
+        if "fever" in user_input_lower:
+            return "🤒 A fever in livestock can indicate infection. Isolate the animal and call the vet."
+        elif "diarrhea" in user_input_lower:
+            return "💧 Diarrhea may result from parasites or poor diet. Hydration and vet visit needed."
+        elif "not eating" in user_input_lower or "loss of appetite" in user_input_lower:
+            return "😟 Could be illness or digestive trouble. Monitor and consult an expert."
+        elif "vaccination" in user_input_lower:
+            return "💉 Ask your vet for a vaccination schedule suited to your livestock."
+        elif "bloat" in user_input_lower:
+            return "⚠️ Bloat is an emergency. Avoid risky feeds and act fast."
+        else:
+            return "🤔 Please describe symptoms in more detail."
 
-# Floating chat UI
-with st.container():
-    st.markdown('<div id="floating-chatbox">', unsafe_allow_html=True)
-    st.markdown('<div id="chat-header">🐄 Livestock Chat</div>', unsafe_allow_html=True)
-    st.markdown('<div id="chat-body">', unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .chat-box { position: fixed; bottom: 90px; right: 45px; width: 320px; max-height: 370px; overflow-y: auto; background: #f8f8f8; padding: 10px; border-radius: 10px; font-size: 14px; }
+    .user { font-weight: bold; color: #0072C6; margin-bottom: 4px; }
+    .bot { font-weight: normal; color: #111; margin-bottom: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    chat_container = st.empty()
 
-    st.markdown('</div>', unsafe_allow_html=True)  # Close body
+    def display_messages():
+        chat_html = '<div class="chat-box">'
+        for msg in st.session_state.messages:
+            role_class = "user" if msg["role"] == "user" else "bot"
+            chat_html += f'<div class="{role_class}">{msg["content"]}</div>'
+        chat_html += "</div>"
+        chat_container.markdown(chat_html, unsafe_allow_html=True)
+
+    display_messages()
 
     prompt = st.chat_input("Ask about livestock health...")
-
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        display_messages()
 
-        # Simulated thinking...
-        thinking_message = "💭 Thinking..."
-        with st.chat_message("assistant"):
-            placeholder = st.empty()
-            placeholder.markdown(thinking_message)
-            time.sleep(1.2)
-            response = get_livestock_response(prompt)
-            placeholder.markdown(response)
+        thinking_placeholder = st.empty()
+        thinking_placeholder.markdown("💭 Thinking...")
+        time.sleep(1.5)
 
+        response = get_livestock_response(prompt)
+        typed_response = ""
+        for char in response:
+            typed_response += char
+            thinking_placeholder.markdown(typed_response)
+            time.sleep(0.03)
+
+        thinking_placeholder.empty()
         st.session_state.messages.append({"role": "assistant", "content": response})
-
-    st.markdown('</div>', unsafe_allow_html=True)  # Close f
+        display_messages()
