@@ -2,9 +2,10 @@ import streamlit as st
 import time
 import streamlit.components.v1 as components
 
+# Page config
 st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
 
-# Inject CSS/HTML/JS for the widget (same as your code)
+# Floating chat widget and JS/CSS
 components.html("""
 <style>
 #chat-widget {
@@ -113,11 +114,11 @@ function playReceiveSound() {
 </div>
 """, height=0)
 
-# State management
+# Session state for chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Response generator (same as your code)
+# Response generator
 def get_livestock_response(user_input):
     user_input_lower = user_input.lower()
     keywords = {
@@ -157,7 +158,7 @@ def get_livestock_response(user_input):
             return val
     return "Can you provide more information about your livestock’s symptoms or behavior?"
 
-# Container for chat display
+# Chat display
 chat_container = st.container()
 
 def display_chat():
@@ -169,6 +170,7 @@ def display_chat():
 
 display_chat()
 
+# Chat input
 user_input = st.chat_input("Ask about livestock health...")
 
 if user_input:
@@ -179,25 +181,21 @@ if user_input:
     with st.spinner("Typing..."):
         reply = get_livestock_response(user_input)
 
-        # Simulate typing effect
+        # Typing animation
         bot_message_placeholder = chat_container.empty()
-
-        # Append user message and then gradually build bot message
         st.session_state.messages.append({"role": "assistant", "content": ""})
         current_bot_msg = ""
 
         for char in reply:
             current_bot_msg += char
-            # Update last bot message content
             st.session_state.messages[-1]["content"] = current_bot_msg
 
-            # Re-render chat messages
             chat_html = ""
             for m in st.session_state.messages:
                 style = "user" if m["role"] == "user" else "bot"
                 chat_html += f'<div class="{style}">{m["content"]}</div>'
             bot_message_placeholder.markdown(chat_html, unsafe_allow_html=True)
 
-            time.sleep(0.03)  # Typing speed (adjust as needed)
+            time.sleep(0.03)
 
     components.html("<script>playReceiveSound();</script>", height=0)
