@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
 
-# Inject HTML/CSS/JS and Sound
+# Inject HTML/CSS/JS and Sound - Bottom Right Chat Widget
 components.html("""
 <style>
 #chat-widget {
@@ -21,13 +21,12 @@ components.html("""
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  resize: both;
+  resize: none;
 }
 #chat-header {
   background-color: #00a676;
   color: white;
   padding: 8px;
-  cursor: move;
   font-weight: bold;
   text-align: center;
   user-select: none;
@@ -43,49 +42,12 @@ components.html("""
   padding: 8px;
   border-top: 1px solid #ccc;
 }
-.minimized {
-  height: 40px !important;
-}
 </style>
 
-<!-- Sound Effects -->
 <audio id="sendSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
 <audio id="receiveSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
 
 <script>
-let widget = null;
-let header = null;
-let offsetX = 0, offsetY = 0;
-let isDragging = false;
-
-window.onload = () => {
-  widget = document.getElementById("chat-widget");
-  header = document.getElementById("chat-header");
-
-  header.ondblclick = () => {
-    widget.classList.toggle("minimized");
-  };
-
-  header.onmousedown = function(e) {
-    isDragging = true;
-    offsetX = e.clientX - widget.getBoundingClientRect().left;
-    offsetY = e.clientY - widget.getBoundingClientRect().top;
-
-    document.onmousemove = function(e) {
-      if (isDragging) {
-        widget.style.left = (e.clientX - offsetX) + "px";
-        widget.style.top = (e.clientY - offsetY) + "px";
-        widget.style.right = "auto";
-        widget.style.bottom = "auto";
-      }
-    };
-
-    document.onmouseup = function() {
-      isDragging = false;
-    };
-  };
-};
-
 function playSendSound() {
   document.getElementById('sendSound').play();
 }
@@ -96,7 +58,7 @@ function playReceiveSound() {
 
 <div id="chat-widget">
   <div id="chat-header">🐄 Livestock Health Chat</div>
-  <div id="chat-body"><!-- Dynamic content injected by Streamlit --></div>
+  <div id="chat-body"><!-- Streamlit content goes here --></div>
 </div>
 """, height=0)
 
@@ -109,7 +71,6 @@ def get_livestock_response(user_input):
     user_input_lower = user_input.lower()
     if "hi" in user_input_lower or "hello" in user_input_lower:
         return "Hello there! How can I help you today?"
-
     elif "help" in user_input_lower:
         return "Sure, I’m here to help! Can you tell me a bit more about what you need?"
     elif "assist" in user_input_lower:
@@ -203,12 +164,11 @@ with st.container():
 
     display_messages()
 
-    # User input
     prompt = st.chat_input("Ask about livestock health...")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        components.html("<script>playSendSound();</script>", height=0)  # 🔊 Play send sound
+        components.html("<script>playSendSound();</script>", height=0)
         display_messages()
 
         thinking_placeholder = st.empty()
@@ -224,6 +184,6 @@ with st.container():
             time.sleep(0.03)
 
         st.session_state.messages.append({"role": "assistant", "content": response})
-        components.html("<script>playReceiveSound();</script>", height=0)  # 🔊 Play receive sound
+        components.html("<script>playReceiveSound();</script>", height=0)
         thinking_placeholder.empty()
         display_messages()
