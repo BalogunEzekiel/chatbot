@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Livestock Health Chatbot", page_icon="🐄", layout="wide")
 
-# Inject CSS/HTML/JS for the widget
+# Inject CSS/HTML/JS for the widget (same as your code)
 components.html("""
 <style>
 #chat-widget {
@@ -45,6 +45,20 @@ components.html("""
 }
 .minimized {
   height: 40px !important;
+}
+.user {
+  background-color: #dcf8c6;
+  margin: 5px;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: right;
+}
+.bot {
+  background-color: #f1f0f0;
+  margin: 5px;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: left;
 }
 </style>
 
@@ -103,7 +117,7 @@ function playReceiveSound() {
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Response generator
+# Response generator (same as your code)
 def get_livestock_response(user_input):
     user_input_lower = user_input.lower()
     keywords = {
@@ -143,29 +157,47 @@ def get_livestock_response(user_input):
             return val
     return "Can you provide more information about your livestock’s symptoms or behavior?"
 
-# Display chat messages
+# Container for chat display
 chat_container = st.container()
+
 def display_chat():
-    chat_html = '<div class="chat-box">'
+    chat_html = ""
     for m in st.session_state.messages:
-        style = 'user' if m["role"] == "user" else "bot"
+        style = "user" if m["role"] == "user" else "bot"
         chat_html += f'<div class="{style}">{m["content"]}</div>'
-    chat_html += "</div>"
     chat_container.markdown(chat_html, unsafe_allow_html=True)
 
 display_chat()
 
-# Input box
 user_input = st.chat_input("Ask about livestock health...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     components.html("<script>playSendSound();</script>", height=0)
+    display_chat()
 
-    with st.spinner("Thinking..."):
-        time.sleep(1.2)
+    with st.spinner("Typing..."):
         reply = get_livestock_response(user_input)
 
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+        # Simulate typing effect
+        bot_message_placeholder = chat_container.empty()
+
+        # Append user message and then gradually build bot message
+        st.session_state.messages.append({"role": "assistant", "content": ""})
+        current_bot_msg = ""
+
+        for char in reply:
+            current_bot_msg += char
+            # Update last bot message content
+            st.session_state.messages[-1]["content"] = current_bot_msg
+
+            # Re-render chat messages
+            chat_html = ""
+            for m in st.session_state.messages:
+                style = "user" if m["role"] == "user" else "bot"
+                chat_html += f'<div class="{style}">{m["content"]}</div>'
+            bot_message_placeholder.markdown(chat_html, unsafe_allow_html=True)
+
+            time.sleep(0.03)  # Typing speed (adjust as needed)
+
     components.html("<script>playReceiveSound();</script>", height=0)
-    display_chat()
